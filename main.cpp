@@ -12,6 +12,7 @@
 struct vertix;
 struct edge;
 int edmondsKarp();
+int edmondsKarp2();
 void BFS();
 
 typedef struct node {
@@ -27,6 +28,7 @@ public:
     int capacity;
     struct edge **adj;
     struct vertix *pi = NULL;
+    struct edge *piE = NULL;
     bool isBackGround = false;
 } Vertix;
 
@@ -198,11 +200,11 @@ int main() {
         }
     }
 
-    n = graph->start; //std::cout << "oi\n";
+    n = graph->start;
 
-    printf("%d\n\n", edmondsKarp()); //std::cout << "oioi\n";
+    printf("%d\n\n", edmondsKarp2());
     
-    BFS(); //std::cout << "oioioi\n";
+    BFS();
 
     std::string str = "";
 
@@ -300,6 +302,69 @@ int edmondsKarp() {
             return sum;
         }
     }
+}
+
+int edmondsKarp2() {
+
+    Node n;
+    Vertix *u, *v;
+    Vertix *s = graph->start->vertix;
+    Vertix *t = graph->target->vertix;
+    Edge *e;
+    int i, adjN, MN = graph->M * graph->N;
+    int df, flow = 0;
+
+    do {
+        //(Run a bfs to find the shortest s-t path.
+        // We use 'pred' to store the edge taken to get to each vertex,
+        // so we can recover the path afterwards)
+        std::queue<Vertix*> queue;
+        queue.push(s);
+        for (n = graph->start; n != NULL ; n = n->next) {
+            n->vertix->piE = NULL;
+            n->vertix->capacity = 0;
+        }
+        s->capacity = MAX_INT;
+        while (!queue.empty()) {
+            u = queue.front();
+            queue.pop();
+            if (0 == u->c) {
+                adjN = MN;
+            } else {
+                adjN = 5;
+            }
+            for (i = 0; i < adjN; i++) {
+                e = u->adj[i];
+                if (NULL == e) continue;
+                v = ( e->a == u ? e->b : e->a ); 
+                if (e->weight - e->flow > 0 && v->piE == NULL) { 
+                    v->piE = e;
+                    queue.push(v);
+                }
+            }
+        }
+        if (NULL != t->piE){    
+            //(We found an augmenting path.
+            // See how much flow we can send) 
+            df = MAX_INT;
+            v = t;
+            for (e = t->piE; e != NULL; e = v->piE) {
+                df = (df - e->weight - e->flow > 0 ? e->weight - e->flow : df);
+                v = ( e->a == v ? e->b : e->a );
+            }
+            //(And update edges by that amount)
+            v = t;
+            for (e = t->piE; e != NULL;  e = v->piE) {
+                e->flow = e->flow + df;
+                //e.rev.flow := e.rev.flow - df //LETS IGNORE PLS
+                v = ( e->a == v ? e->b : e->a );
+            }
+            flow = flow + df;
+        }
+    
+    } while(NULL != t->piE);
+
+    return flow;
 }
 
 void BFS() {

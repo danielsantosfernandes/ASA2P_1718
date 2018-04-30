@@ -9,38 +9,33 @@
 
 #define MAX_INT 2147483647
 
-class Vertix;
-class Edge;
+struct vertix;
+struct edge;
 int edmondsKarp();
 void BFS();
 
 typedef struct node {
-	Vertix *vertix;
+	struct vertix *vertix;
 	struct node *next, *prev;
 } node;
 
 typedef node *Node;
 
-class Vertix {
+typedef struct vertix {
 public:
     int l, c;
     int capacity;
-    Edge **adj;
-    Vertix *pi = NULL;
+    struct edge **adj;
+    struct vertix *pi = NULL;
     bool isBackGround = false;
-};
+} Vertix;
 
-class Edge {
+typedef struct edge {
 public:
     Vertix *a, *b;
     int weight;
-    int flow;
-    Edge(Vertix *v1, Vertix *v2) {
-        a = v1;
-        b = v2;
-        flow = 0;
-    }
-};
+    int flow = 0;
+} Edge;
 
 class Graph {  /* l=0,c=0 - start ; l=0,c=1 - target*/
 public:
@@ -111,7 +106,9 @@ int main() {
     for (i = 1; i <= graph->M; i++) {
         for (j = 1; j <= graph->N; j++) {
             n = n->next;
-            auxEdge = graph->start->vertix->adj[(i-1)*graph->N + (j-1)] = new Edge(graph->start->vertix, n->vertix);
+            auxEdge = graph->start->vertix->adj[(i-1)*graph->N + (j-1)] = new Edge();
+            auxEdge->a = graph->start->vertix;
+            auxEdge->b = n->vertix;
             if(1 != scanf("%d", &(auxEdge->weight))) return 1;
         }
     }
@@ -122,7 +119,9 @@ int main() {
     for (i = 1; i <= graph->M; i++) {
         for (j = 1; j <= graph->N; j++) {
             n = n->next;
-            auxEdge = n->vertix->adj[0] = new Edge(n->vertix, graph->target->vertix);
+            auxEdge = n->vertix->adj[0] = new Edge();
+            auxEdge->a = n->vertix;
+            auxEdge->b = graph->target->vertix;
             if(1 != scanf("%d", &(auxEdge->weight))) return 1;
         }
     }
@@ -140,9 +139,10 @@ int main() {
             n = n->next;
             if (i > 1) {
                 above = above->next;
-                n->vertix->adj[1] = new Edge(n->vertix, above->vertix);
+                n->vertix->adj[1] = new Edge();
+                n->vertix->adj[1]->a = n->vertix;
+                n->vertix->adj[1]->b = above->vertix;
                 above->vertix->adj[3] = n->vertix->adj[1];
-                //std::cout << above->vertix->l << " " << above->vertix->c << " " << above->vertix->south << std::endl;
             } /*else {
                 n->vertix->adj[1] = NULL;
             }
@@ -152,7 +152,9 @@ int main() {
             }*/
 
             if (j < graph->N) {
-                n->vertix->adj[2] = new Edge(n->vertix, n->next->vertix);
+                n->vertix->adj[2] = new Edge();
+                n->vertix->adj[2]->a = n->vertix;
+                n->vertix->adj[2]->b = n->next->vertix;
             }/* else {
                 n->vertix->adj[2] = NULL;
             }*/
@@ -187,11 +189,11 @@ int main() {
         }
     }
 
-    n = graph->start;
+    n = graph->start; std::cout << "oi\n";
 
-    printf("%d\n\n", edmondsKarp());
+    printf("%d\n\n", edmondsKarp()); std::cout << "oioi\n";
     
-    BFS();
+    BFS(); std::cout << "oioioi\n";
 
     for (i = 1; i <= graph->M; i++) {
         for (j = 1; j <= graph->N; j++) {
@@ -205,25 +207,6 @@ int main() {
         printf("\n");
     }
 
-/*  printa o grafo com os pesos das arestas
-    for (i = 1; i <= graph->M; i++) {
-        aux = n;
-        for (j = 1; j <= graph->N; j++) {
-            n = n->next;
-            if (j < graph->N)
-                printf("(%d,%d) - %d - ", n->vertix->l, n->vertix->c, n->vertix->east->weight);
-            else
-                printf("(%d,%d)", n->vertix->l, n->vertix->c);
-        }
-        printf("\n");
-        for (j = 1; j <= graph->N; j++) {
-            aux = aux->next;
-            if (i < graph->M)
-                printf("  %d         ", aux->vertix->south->weight);
-        }
-        printf("\n");
-    }
-    */
 
    return 0;
 }
@@ -235,9 +218,9 @@ int edmondsKarp() {
     Vertix *s = graph->start->vertix;
     Vertix *t = graph->target->vertix;
     Edge *e;
-    int i, adjN;
+    int i, adjN, MN = graph->M * graph->N;
 
-    while (true) { //std::cout << "236---------------\n";
+    while (true) { ////std::cout << "236---------------\n";
         bool stop = false;
         std::queue<Vertix*> queue;
         for (n = graph->start; n != NULL ; n = n->next) {
@@ -246,11 +229,12 @@ int edmondsKarp() {
         s->capacity = MAX_INT;
         s->pi = s;
         queue.push(s);
-        while (!queue.empty() && !stop) { //std::cout << "\t239\n";
+        while (!queue.empty()) { ////std::cout << "\t239\n";
+            stop = false;
             u = queue.front();
             queue.pop();
             if (0 == u->c) {
-                adjN = graph->M * graph->N;
+                adjN = MN;
             } else {
                 adjN = 5;
             }
@@ -277,15 +261,15 @@ int edmondsKarp() {
                                 e = u->adj[(v->l - 1) * graph->N + (v->c - 1)];
                             } else if (u->l > v->l) { //std::cout << "\t\tto north\n";
                                 e = u->adj[1];
-                            } else if (u->l < v->l) {//std::cout << "\t\tto south\n";
+                            } else if (u->l < v->l) { //std::cout << "\t\tto south\n";
                                 e = u->adj[3];
-                            } else if (u->c > v->c) {//std::cout << "\t\tto west\n";
+                            } else if (u->c > v->c) { //std::cout << "\t\tto west\n";
                                 e = u->adj[4];
-                            } else if (u->c < v->c) {//std::cout << "\t\tto east\n";
+                            } else if (u->c < v->c) { //std::cout << "\t\tto east\n";
                                 e = u->adj[2];
                             } else printf("WHAT THE FUCK");
                             v = ( e->a == u ? e->b : e->a );
-                            e->flow += t->capacity; //std::cout << "\t\t\t273 " << t->capacity << std::endl;
+                            e->flow += t->capacity;  //std::cout << "\t\t\t273 " << t->capacity << std::endl;
                             /*F[v][u] -= M[t]; let's ignore this line bECAUSE I CAN*/
                             v = u;
                         }

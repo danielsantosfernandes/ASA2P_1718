@@ -7,9 +7,12 @@
 #include <stdio.h>
 #include <queue>
 
+#define MAX_INT 2147483647
+
 class Vertix;
 class Edge;
 int edmondsKarp();
+void BFS();
 
 typedef struct node {
 	Vertix *vertix;
@@ -24,6 +27,7 @@ public:
     int capacity;
     Edge **adj;
     Vertix *pi = NULL;
+    bool isBackGround = false;
 };
 
 class Edge {
@@ -90,21 +94,18 @@ Graph *graph;
 int main() {
 
     int i, j;
-    Node n, above, aux;
+    Node n, above = NULL, aux;
     Edge *auxEdge;
 
-    graph = new Graph(); std::cout << "93\n";
+    graph = new Graph();
 
     /*scan de M e N*/
 	if(1 != scanf("%d", &(graph->M))) return 1;
 	if(1 != scanf("%d", &(graph->N))) return 1;    
     
-    //TODO IGNORAR \n ????? 
-    std::cout << "96\n";
-
     n = graph->start;
 
-    graph->initializeVertices(); std::cout << "103\n";
+    graph->initializeVertices();
 
     /*scan de valores de primeiro plano*/
     for (i = 1; i <= graph->M; i++) {
@@ -117,7 +118,7 @@ int main() {
 
     n = graph->start;
 
-    /*scan de valores de cenario*/ std::cout << "115\n";
+    /*scan de valores de cenario*/
     for (i = 1; i <= graph->M; i++) {
         for (j = 1; j <= graph->N; j++) {
             n = n->next;
@@ -164,7 +165,7 @@ int main() {
         }
     }
 
-    n = graph->start; std::cout << "146\n";
+    n = graph->start;
 
     /*scan de pesos horizontais*/
     /*0-target; 1-north; 2-east; 3-south; 4-west*/
@@ -178,7 +179,7 @@ int main() {
 
     n = graph->start;
 
-    /*scan de pesos verticais*/   std::cout << "157\n";
+    /*scan de pesos verticais*/
     for (i = 1; i <= graph->M - 1; i++) {
         for (j = 1; j <= graph->N; j++) {
             n = n->next;
@@ -186,21 +187,23 @@ int main() {
         }
     }
 
-    n = graph->start; std::cout << "164\n";
+    n = graph->start;
 
-    printf("%d\n", edmondsKarp());
+    printf("%d\n\n", edmondsKarp());
+    
+    BFS();
 
-
-
-
-/*  printa o grafo com os pesos dos vertices
     for (i = 1; i <= graph->M; i++) {
         for (j = 1; j <= graph->N; j++) {
             n = n->next;
-            printf("%d,%d: %d %d  ", n->vertix->l, n->vertix->c, n->vertix->fg, n->vertix->bg);
+            if (n->vertix->isBackGround) {
+                printf("C ");
+            } else {
+                printf("P ");
+            }
         }
         printf("\n");
-    } */
+    }
 
 /*  printa o grafo com os pesos das arestas
     for (i = 1; i <= graph->M; i++) {
@@ -222,6 +225,7 @@ int main() {
     }
     */
 
+   return 0;
 }
 
 int edmondsKarp() {
@@ -233,16 +237,16 @@ int edmondsKarp() {
     Edge *e;
     int i, adjN;
 
-    while (true) { std::cout << "236---------------\n";
+    while (true) { //std::cout << "236---------------\n";
         bool stop = false;
         std::queue<Vertix*> queue;
         for (n = graph->start; n != NULL ; n = n->next) {
             n->vertix->pi = NULL;
         }
-        s->capacity = 2147483647;
+        s->capacity = MAX_INT;
         s->pi = s;
         queue.push(s);
-        while (!queue.empty() && !stop) { std::cout << "239\n";
+        while (!queue.empty() && !stop) { //std::cout << "\t239\n";
             u = queue.front();
             queue.pop();
             if (0 == u->c) {
@@ -250,10 +254,10 @@ int edmondsKarp() {
             } else {
                 adjN = 5;
             }
-            for (i = 0; i < adjN && !stop; i++) { std::cout << "247 " << i << std::endl;
+            for (i = 0; i < adjN && !stop; i++) { //std::cout << "\t\t247 " << u->l << " " << u->c << std::endl;
                 e = u->adj[i];
-                if (NULL == e) break;
-                v = ( e->a == u ? e->b : e->a );
+                if (NULL == e) continue;
+                v = ( e->a == u ? e->b : e->a ); //std::cout << "\t\t "<< v->l << " " << v->c << std::endl;
                 // There is available capacity,
                 // and v is not seen before in search
                 if (e->weight - e->flow > 0 && v->pi == NULL) {
@@ -265,23 +269,23 @@ int edmondsKarp() {
                         queue.push(v);
                     else {
                         // Backtrack search, and write flow
-                        while (v->pi != v) { std::cout << "259 !\n";
-                            u = v->pi; std::cout << "260\n";
-                            if (0 == v->l) { std::cout << "261\n";
+                        while (v->pi != v) { //std::cout << "\t\t\t259 ";
+                            u = v->pi;
+                            if (0 == v->l) { //std::cout << "\t\tto target\n";
                                 e = u->adj[0];
-                            } else if (0 == u->l) { std::cout << "262\n";
+                            } else if (0 == u->l) { //std::cout << "\t\tfrom start\n";
                                 e = u->adj[(v->l - 1) * graph->N + (v->c - 1)];
-                            } else if (u->l > v->l) { std::cout << "263\n";
+                            } else if (u->l > v->l) { //std::cout << "\t\tto north\n";
                                 e = u->adj[1];
-                            } else if (u->l < v->l) {std::cout << "265\n";
+                            } else if (u->l < v->l) {//std::cout << "\t\tto south\n";
                                 e = u->adj[3];
-                            } else if (u->c > v->c) {std::cout << "267\n";
+                            } else if (u->c > v->c) {//std::cout << "\t\tto west\n";
                                 e = u->adj[4];
-                            } else if (u->c < v->c) {std::cout << "269\n";
+                            } else if (u->c < v->c) {//std::cout << "\t\tto east\n";
                                 e = u->adj[2];
-                            } else printf("WHAT THE FUCK"); std::cout << "271\n";
-                            v = ( e->a == u ? e->b : e->a ); std::cout << "272\n";
-                            e->flow += t->capacity; std::cout << "273 " << t->capacity << std::endl;
+                            } else printf("WHAT THE FUCK");
+                            v = ( e->a == u ? e->b : e->a );
+                            e->flow += t->capacity; //std::cout << "\t\t\t273 " << t->capacity << std::endl;
                             /*F[v][u] -= M[t]; let's ignore this line bECAUSE I CAN*/
                             v = u;
                         }
@@ -298,4 +302,44 @@ int edmondsKarp() {
             return sum;
         }
     }
+}
+
+void BFS() {
+    Node n;
+    Vertix *u, *v;
+    Vertix *s = graph->start->vertix;
+    Vertix *t = graph->target->vertix;
+    Edge *e;
+    int i, adjN;
+
+    std::queue<Vertix*> queue;
+
+    for (n = graph->start; n != NULL ; n = n->next) {
+        n->vertix->pi = NULL;
+    }
+    s->pi = s;
+
+    queue.push(s);
+    while (!queue.empty()) {
+        u = queue.front();
+        queue.pop();
+        if (0 == u->c) {
+            adjN = graph->M * graph->N;
+        } else {
+            adjN = 5;
+        }
+        for (i = 0; i < adjN; i++) {
+            e = u->adj[i];
+            if (NULL == e) continue;
+            v = ( e->a == u ? e->b : e->a );
+            if (e->weight - e->flow > 0 && v->pi == NULL) {
+                v->pi = u;
+                v->isBackGround = true;
+                if (v != t)
+                    queue.push(v);
+            }
+        }
+    }
+
+
 }

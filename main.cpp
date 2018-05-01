@@ -12,7 +12,6 @@
 struct vertix;
 struct edge;
 int edmondsKarp();
-int edmondsKarp2();
 void BFS();
 
 typedef struct node {
@@ -118,7 +117,7 @@ int main() {
     }
 
     n = graph->start;
-    //Edge *e1;
+    Edge *e1;
 
     /*scan de valores de cenario*/
     for (i = 1; i <= graph->M; i++) {
@@ -129,10 +128,9 @@ int main() {
             auxEdge->b = graph->target->vertix;
             if(1 != scanf("%d", &(auxEdge->weight))) return 1;
 
-            
-            //e1 = s->adj[(i - 1) * graph->N + (j - 1)];
-            //int capacity = (e1->weight - auxEdge->weight) > 0 ? auxEdge->weight : e1->weight;
-            //e1->flow = auxEdge->flow = capacity;
+            e1 = s->adj[(i-1)*graph->N + (j-1)];
+            int capacity = ((e1->weight - auxEdge->weight) > 0 ? auxEdge->weight : e1->weight);
+            e1->flow = auxEdge->flow = capacity;
 
         }
     }
@@ -202,7 +200,7 @@ int main() {
 
     n = graph->start;
 
-    printf("%d\n\n", edmondsKarp2());
+    printf("%d\n\n", edmondsKarp());
     
     BFS();
 
@@ -239,13 +237,12 @@ int edmondsKarp() {
         bool stop = false;
         std::queue<Vertix*> queue;
         for (n = graph->start; n != NULL ; n = n->next) {
-            n->vertix->pi = NULL;
+            n->vertix->piE = NULL;
             n->vertix->capacity = 0;
         }
         s->capacity = MAX_INT;
-        s->pi = s;
         queue.push(s);
-        while (!queue.empty()) { //std::cout << "\t239\n";
+        while (!queue.empty() && !stop) { //std::cout << "\t239\n";
             stop = false;
             u = queue.front();
             queue.pop();
@@ -260,31 +257,20 @@ int edmondsKarp() {
                 v = ( e->a == u ? e->b : e->a ); //std::cout << "\t\t "<< v->l << " " << v->c << std::endl;
                 // There is available capacity,
                 // and v is not seen before in search
-                if (e->weight - e->flow > 0 && v->pi == NULL) {
-                    v->pi = u; 
+                int spare = e->weight - e->flow;
+                if (spare > 0 && v->piE == NULL) {
+                    v->piE = e; 
+                    int uCap = u->capacity;
                     //std::cout << u->capacity << " - (" << e->weight << " - " << e->flow << ") > 0 ? " << e->weight << " - " << e->flow << " : " << u->capacity << std::endl;
-                    v->capacity = (u->capacity - (e->weight - e->flow) > 0 ? e->weight - e->flow : u->capacity);
+                    v->capacity = (uCap - spare > 0 ? spare : uCap);
                     //std::cout << v->capacity << std::endl;
                     if (v != t)
                         queue.push(v);
                     else {
                         // Backtrack search, and write flow
-                        while (v->pi != v) { //std::cout << "\t\t\t259 ";
-                            u = v->pi;
-                            if (0 == v->l) { //std::cout << "\t\tto target\n";
-                                e = u->adj[0];
-                            } else if (0 == u->l) { //std::cout << "\t\tfrom start\n";
-                                e = u->adj[(v->l - 1) * graph->N + (v->c - 1)];
-                            } else if (u->l > v->l) { //std::cout << "\t\tto north\n";
-                                e = u->adj[1];
-                            } else if (u->l < v->l) { //std::cout << "\t\tto south\n";
-                                e = u->adj[3];
-                            } else if (u->c > v->c) { //std::cout << "\t\tto west\n";
-                                e = u->adj[4];
-                            } else if (u->c < v->c) { //std::cout << "\t\tto east\n";
-                                e = u->adj[2];
-                            } else break;//printf("WHAT THE FUCK");
-                            v = ( e->a == u ? e->b : e->a );
+                        while (v != s) { //std::cout << "\t\t\t259 ";
+                            e = v->piE;
+                            u = ( e->a == v ? e->b : e->a );
                             e->flow += t->capacity;  //std::cout << "\t\t\t273 " << t->capacity << std::endl;
                             /*F[v][u] -= M[t]; let's ignore this line bECAUSE I CAN*/
                             v = u;
@@ -294,7 +280,7 @@ int edmondsKarp() {
                 }
             }
         }
-        if (t->pi == NULL) { // We did not find a path to t
+        if (t->piE == NULL) { // We did not find a path to t
             int sum = 0;
             for (i = 0; i < graph->M * graph->N; i++) {
                 sum += s->adj[i]->flow;
@@ -304,68 +290,6 @@ int edmondsKarp() {
     }
 }
 
-int edmondsKarp2() {
-
-    Node n;
-    Vertix *u, *v;
-    Vertix *s = graph->start->vertix;
-    Vertix *t = graph->target->vertix;
-    Edge *e;
-    int i, adjN, MN = graph->M * graph->N;
-    int df, flow = 0;
-
-    do {
-        //(Run a bfs to find the shortest s-t path.
-        // We use 'pred' to store the edge taken to get to each vertex,
-        // so we can recover the path afterwards)
-        std::queue<Vertix*> queue;
-        queue.push(s);
-        for (n = graph->start; n != NULL ; n = n->next) {
-            n->vertix->piE = NULL;
-            n->vertix->capacity = 0;
-        }
-        s->capacity = MAX_INT;
-        while (!queue.empty()) {
-            u = queue.front();
-            queue.pop();
-            if (0 == u->c) {
-                adjN = MN;
-            } else {
-                adjN = 5;
-            }
-            for (i = 0; i < adjN; i++) {
-                e = u->adj[i];
-                if (NULL == e) continue;
-                v = ( e->a == u ? e->b : e->a ); 
-                if (e->weight - e->flow > 0 && v->piE == NULL) { 
-                    v->piE = e;
-                    queue.push(v);
-                }
-            }
-        }
-        if (NULL != t->piE){    
-            //(We found an augmenting path.
-            // See how much flow we can send) 
-            df = MAX_INT;
-            v = t;
-            for (e = t->piE; e != NULL; e = v->piE) {
-                df = (df - e->weight - e->flow > 0 ? e->weight - e->flow : df);
-                v = ( e->a == v ? e->b : e->a );
-            }
-            //(And update edges by that amount)
-            v = t;
-            for (e = t->piE; e != NULL;  e = v->piE) {
-                e->flow = e->flow + df;
-                //e.rev.flow := e.rev.flow - df //LETS IGNORE PLS
-                v = ( e->a == v ? e->b : e->a );
-            }
-            flow = flow + df;
-        }
-    
-    } while(NULL != t->piE);
-
-    return flow;
-}
 
 void BFS() {
     Node n;

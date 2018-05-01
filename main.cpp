@@ -13,6 +13,7 @@ struct vertix;
 struct edge;
 int edmondsKarp();
 void BFS();
+void BFSfromTarget();
 
 typedef struct node {
 	struct vertix *vertix;
@@ -324,6 +325,54 @@ void BFS() {
                 v->isBackGround = true;
                 if (v != t)
                     queue.push(v);
+            }
+        }
+    }
+
+
+}
+
+void BFSfromTarget() {
+    Node n;
+    Vertix *u, *v;
+    Vertix *s = graph->start->vertix;
+    Vertix *t = graph->target->vertix;
+    Edge *e;
+    int i, adjN;
+
+    std::queue<Vertix*> queue;
+
+    for (n = graph->start; n != NULL ; n = n->next) {
+        n->vertix->pi = NULL;
+        n->vertix->isBackGround = true;
+    }
+    t->pi = t;
+
+    n = graph->start;
+
+    queue.push(t);
+    while (!queue.empty()) {
+        u = queue.front();
+        queue.pop();
+        if (0 == u->l) {
+            adjN = graph->M * graph->N;
+        } else {
+            adjN = 5;
+        }
+        for (i = 0; i < adjN; i++) {
+            if (0 != u->l) e = u->adj[i];
+            else {
+                n = n->next;
+                e = n->vertix->adj[0];
+            }
+            if (NULL == e) continue;
+            v = ( e->a == u ? e->b : e->a );
+            if (e->weight - e->flow > 0 && v->pi == NULL) {
+                v->pi = u;
+                v->isBackGround = false;
+                if (v != s) {
+                    queue.push(v);
+                }
             }
         }
     }

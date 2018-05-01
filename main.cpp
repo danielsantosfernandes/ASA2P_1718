@@ -37,7 +37,8 @@ typedef struct edge {
 public:
     Vertix *a, *b;
     int weight;
-    int flow = 0;
+    int flowAB = 0;
+    int flowBA = 0;
 } Edge;
 
 class Graph {  /* l=0,c=0 - start ; l=0,c=1 - target*/
@@ -132,7 +133,8 @@ int main() {
 
             e1 = s->adj[(i-1)*graph->N + (j-1)];
             int capacity = ((e1->weight - auxEdge->weight) > 0 ? auxEdge->weight : e1->weight);
-            e1->flow = auxEdge->flow = capacity;
+            e1->flowAB = auxEdge->flowAB = capacity;
+            e1->flowBA = auxEdge->flowBA = -capacity;
 
         }
     }
@@ -248,7 +250,7 @@ int edmondsKarp() {
     Vertix *s = graph->start->vertix;
     Vertix *t = graph->target->vertix;
     Edge *e;
-    int i, adjN, MN = graph->M * graph->N;
+    int i, spare, adjN, MN = graph->M * graph->N;
 
     while (true) { //std::cout << "236---------------\n";
         bool stop = false;
@@ -274,7 +276,11 @@ int edmondsKarp() {
                 v = ( e->a == u ? e->b : e->a ); //std::cout << "\t\t "<< v->l << " " << v->c << std::endl;
                 // There is available capacity,
                 // and v is not seen before in search
-                int spare = e->weight - e->flow;
+                if (u == e->a) {
+                    spare = e->weight - e->flowAB;
+                } else {
+                    spare = e->weight - e->flowBA;
+                }
                 if (spare > 0 && v->piE == NULL) {
                     v->piE = e; 
                     int uCap = u->capacity;
@@ -288,8 +294,13 @@ int edmondsKarp() {
                         while (v != s) { //std::cout << "\t\t\t259 ";
                             e = v->piE;
                             u = ( e->a == v ? e->b : e->a );
-                            e->flow += t->capacity;  //std::cout << "\t\t\t273 " << t->capacity << std::endl;
-                            /*F[v][u] -= M[t]; let's ignore this line bECAUSE I CAN*/
+                            if (u == e->a) {
+                                e->flowAB += t->capacity;
+                                e->flowBA -= t->capacity;
+                            } else {
+                                e->flowBA += t->capacity;
+                                e->flowAB -= t->capacity;
+                            }
                             v = u;
                         }
                         stop = true;
@@ -300,7 +311,7 @@ int edmondsKarp() {
         if (t->piE == NULL) { // We did not find a path to t
             int sum = 0;
             for (i = 0; i < graph->M * graph->N; i++) {
-                sum += s->adj[i]->flow;
+                sum += s->adj[i]->flowAB;
             }
             return sum;
         }
@@ -336,7 +347,7 @@ int BFS() {
             e = u->adj[i];
             if (NULL == e) continue;
             v = ( e->a == u ? e->b : e->a );
-            if (e->weight - e->flow > 0 && v->pi == NULL) {
+            if (e->weight - ( u == e->a ? e->flowAB : e->flowBA) > 0 && v->pi == NULL) {
                 v->pi = u;
                 v->isBackGround = true;
                 Cnumber++;
@@ -384,7 +395,7 @@ int BFSfromTarget() {
             }
             if (NULL == e) continue;
             v = ( e->a == u ? e->b : e->a );
-            if (e->weight - e->flow > 0 && v->pi == NULL) {
+            if (e->weight - ( u == e->a ? e->flowBA : e->flowAB) > 0 && v->pi == NULL) {
                 v->pi = u;
                 v->isForeGround = true;
                 Pnumber++;

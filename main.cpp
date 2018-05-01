@@ -12,8 +12,8 @@
 struct vertix;
 struct edge;
 int edmondsKarp();
-void BFS();
-void BFSfromTarget();
+int BFS();
+int BFSfromTarget();
 
 typedef struct node {
 	struct vertix *vertix;
@@ -29,7 +29,8 @@ public:
     struct edge **adj;
     struct vertix *pi = NULL;
     struct edge *piE = NULL;
-    bool isBackGround = false;
+    bool isBackGround = false;  //for use in BFS
+    bool isForeGround = false;  //for use in BFSfromTarget
 } Vertix;
 
 typedef struct edge {
@@ -202,21 +203,36 @@ int main() {
     n = graph->start;
 
     printf("%d\n\n", edmondsKarp());
-    
-    BFS();
+
+    int Pnumber = BFSfromTarget();
+    int Cnumber = BFS();
 
     std::string str = "";
 
-    for (i = 1; i <= graph->M; i++) {
-        for (j = 1; j <= graph->N; j++) {
-            n = n->next;
-            if (n->vertix->isBackGround) {
-                str += "C ";
-            } else {
-                str += "P ";
+    if ( (graph->M*graph->N - Cnumber) > Pnumber ) {
+        for (i = 1; i <= graph->M; i++) {
+            for (j = 1; j <= graph->N; j++) {
+                n = n->next;
+                if (n->vertix->isBackGround) {
+                    str += "C ";
+                } else {
+                    str += "P ";
+                }
             }
+            str += "\n";
         }
-        str += "\n";
+    } else {
+        for (i = 1; i <= graph->M; i++) {
+            for (j = 1; j <= graph->N; j++) {
+                n = n->next;
+                if (n->vertix->isForeGround) {
+                    str += "P ";
+                } else {
+                    str += "C ";
+                }
+            }
+            str += "\n";
+        }
     }
 
     printf("%s", str.c_str());
@@ -292,13 +308,13 @@ int edmondsKarp() {
 }
 
 
-void BFS() {
+int BFS() {
     Node n;
     Vertix *u, *v;
     Vertix *s = graph->start->vertix;
     Vertix *t = graph->target->vertix;
     Edge *e;
-    int i, adjN;
+    int i, adjN, Cnumber = 0;
 
     std::queue<Vertix*> queue;
 
@@ -323,28 +339,29 @@ void BFS() {
             if (e->weight - e->flow > 0 && v->pi == NULL) {
                 v->pi = u;
                 v->isBackGround = true;
+                Cnumber++;
                 if (v != t)
                     queue.push(v);
             }
         }
     }
+    return Cnumber;
 
 
 }
 
-void BFSfromTarget() {
+int BFSfromTarget() {
     Node n;
     Vertix *u, *v;
     Vertix *s = graph->start->vertix;
     Vertix *t = graph->target->vertix;
     Edge *e;
-    int i, adjN;
+    int i, adjN, Pnumber = 0;
 
     std::queue<Vertix*> queue;
 
     for (n = graph->start; n != NULL ; n = n->next) {
         n->vertix->pi = NULL;
-        n->vertix->isBackGround = true;
     }
     t->pi = t;
 
@@ -369,13 +386,13 @@ void BFSfromTarget() {
             v = ( e->a == u ? e->b : e->a );
             if (e->weight - e->flow > 0 && v->pi == NULL) {
                 v->pi = u;
-                v->isBackGround = false;
+                v->isForeGround = true;
+                Pnumber++;
                 if (v != s) {
                     queue.push(v);
                 }
             }
         }
     }
-
-
+    return Pnumber;
 }

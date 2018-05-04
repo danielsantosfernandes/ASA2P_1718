@@ -12,8 +12,7 @@
 struct vertix;
 struct edge;
 int edmondsKarp();
-int BFS();
-int BFSfromTarget();
+void BFS();
 
 typedef struct node {
 	struct vertix *vertix;
@@ -29,8 +28,7 @@ public:
     struct edge **adj;
     struct vertix *pi = NULL;
     struct edge *piE = NULL;
-    bool isBackGround = false;  //for use in BFS
-    bool isForeGround = false;  //for use in BFSfromTarget
+    bool isBackGround = false;
 } Vertix;
 
 typedef struct edge {
@@ -69,7 +67,6 @@ public:
     void initializeVertices() {
         Node aux;
         start->vertix->adj = new Edge*[M*N];
-        target->vertix->adj = new Edge*[M*N];  //DESNECESSARIO
         for (int i = 1; i <= M; i++) {
             for (int j = 1; j <= N; j++) {
                 aux = target->prev;
@@ -156,27 +153,15 @@ int main() {
                 n->vertix->adj[1]->a = n->vertix;
                 n->vertix->adj[1]->b = above->vertix;
                 above->vertix->adj[3] = n->vertix->adj[1];
-            } /*else {
-                n->vertix->adj[1] = NULL;
             }
-
-            if (i = graph->M) {
-                n->vertix->adj[3] = NULL;
-            }*/
-
             if (j < graph->N) {
                 n->vertix->adj[2] = new Edge();
                 n->vertix->adj[2]->a = n->vertix;
                 n->vertix->adj[2]->b = n->next->vertix;
-            }/* else {
-                n->vertix->adj[2] = NULL;
-            }*/
-
+            }
             if (j > 1) {
                 n->vertix->adj[4] = n->prev->vertix->adj[2];
-            }/* else  {
-                n->vertix->adj[4] = NULL;
-            }*/
+            }
         }
     }
 
@@ -206,41 +191,27 @@ int main() {
 
     printf("%d\n\n", edmondsKarp());
 
-    int Pnumber = BFSfromTarget();
-    int Cnumber = BFS();
+    BFS();
 
     std::string str = "";
 
-    if ( (graph->M*graph->N - Cnumber) > Pnumber ) {
-        for (i = 1; i <= graph->M; i++) {
-            for (j = 1; j <= graph->N; j++) {
-                n = n->next;
-                if (n->vertix->isBackGround) {
-                    str += "C ";
-                } else {
-                    str += "P ";
-                }
+    for (i = 1; i <= graph->M; i++) {
+        for (j = 1; j <= graph->N; j++) {
+            n = n->next;
+            if (n->vertix->isBackGround) {
+                str += "C ";
+            } else {
+                str += "P ";
             }
-            str += "\n";
         }
-    } else {
-        for (i = 1; i <= graph->M; i++) {
-            for (j = 1; j <= graph->N; j++) {
-                n = n->next;
-                if (n->vertix->isForeGround) {
-                    str += "P ";
-                } else {
-                    str += "C ";
-                }
-            }
-            str += "\n";
-        }
+        str += "\n";
     }
+    
 
     printf("%s", str.c_str());
 
 
-   return 0;
+    return 0;
 }
 
 int edmondsKarp() {
@@ -252,7 +223,7 @@ int edmondsKarp() {
     Edge *e;
     int i, spare, adjN, MN = graph->M * graph->N;
 
-    while (true) { //std::cout << "236---------------\n";
+    while (true) {
         bool stop = false;
         std::queue<Vertix*> queue;
         for (n = graph->start; n != NULL ; n = n->next) {
@@ -261,7 +232,7 @@ int edmondsKarp() {
         }
         s->capacity = MAX_INT;
         queue.push(s);
-        while (!queue.empty() && !stop) { //std::cout << "\t239\n";
+        while (!queue.empty() && !stop) {
             stop = false;
             u = queue.front();
             queue.pop();
@@ -270,12 +241,10 @@ int edmondsKarp() {
             } else {
                 adjN = 5;
             }
-            for (i = 0; i < adjN && !stop; i++) { //std::cout << "\t\t247 " << u->l << " " << u->c << std::endl;
+            for (i = 0; i < adjN && !stop; i++) { 
                 e = u->adj[i];
                 if (NULL == e) continue;
-                v = ( e->a == u ? e->b : e->a ); //std::cout << "\t\t "<< v->l << " " << v->c << std::endl;
-                // There is available capacity,
-                // and v is not seen before in search
+                v = ( e->a == u ? e->b : e->a );
                 if (u == e->a) {
                     spare = e->weight - e->flowAB;
                 } else {
@@ -284,14 +253,11 @@ int edmondsKarp() {
                 if (spare > 0 && v->piE == NULL) {
                     v->piE = e; 
                     int uCap = u->capacity;
-                    //std::cout << u->capacity << " - (" << e->weight << " - " << e->flow << ") > 0 ? " << e->weight << " - " << e->flow << " : " << u->capacity << std::endl;
                     v->capacity = (uCap - spare > 0 ? spare : uCap);
-                    //std::cout << v->capacity << std::endl;
                     if (v != t)
                         queue.push(v);
                     else {
-                        // Backtrack search, and write flow
-                        while (v != s) { //std::cout << "\t\t\t259 ";
+                        while (v != s) {
                             e = v->piE;
                             u = ( e->a == v ? e->b : e->a );
                             if (u == e->a) {
@@ -308,7 +274,7 @@ int edmondsKarp() {
                 }
             }
         }
-        if (t->piE == NULL) { // We did not find a path to t
+        if (t->piE == NULL) {
             int sum = 0;
             for (i = 0; i < graph->M * graph->N; i++) {
                 sum += s->adj[i]->flowAB;
@@ -319,13 +285,13 @@ int edmondsKarp() {
 }
 
 
-int BFS() {
+void BFS() {
     Node n;
     Vertix *u, *v;
     Vertix *s = graph->start->vertix;
     Vertix *t = graph->target->vertix;
     Edge *e;
-    int i, adjN, Cnumber = 0;
+    int i, adjN;
 
     std::queue<Vertix*> queue;
 
@@ -350,60 +316,9 @@ int BFS() {
             if (e->weight - ( u == e->a ? e->flowAB : e->flowBA) > 0 && v->pi == NULL) {
                 v->pi = u;
                 v->isBackGround = true;
-                Cnumber++;
                 if (v != t)
                     queue.push(v);
             }
         }
     }
-    return Cnumber;
-
-
-}
-
-int BFSfromTarget() {
-    Node n;
-    Vertix *u, *v;
-    Vertix *s = graph->start->vertix;
-    Vertix *t = graph->target->vertix;
-    Edge *e;
-    int i, adjN, Pnumber = 0;
-
-    std::queue<Vertix*> queue;
-
-    for (n = graph->start; n != NULL ; n = n->next) {
-        n->vertix->pi = NULL;
-    }
-    t->pi = t;
-
-    n = graph->start;
-
-    queue.push(t);
-    while (!queue.empty()) {
-        u = queue.front();
-        queue.pop();
-        if (0 == u->l) {
-            adjN = graph->M * graph->N;
-        } else {
-            adjN = 5;
-        }
-        for (i = 0; i < adjN; i++) {
-            if (0 != u->l) e = u->adj[i];
-            else {
-                n = n->next;
-                e = n->vertix->adj[0];
-            }
-            if (NULL == e) continue;
-            v = ( e->a == u ? e->b : e->a );
-            if (e->weight - ( u == e->a ? e->flowBA : e->flowAB) > 0 && v->pi == NULL) {
-                v->pi = u;
-                v->isForeGround = true;
-                Pnumber++;
-                if (v != s) {
-                    queue.push(v);
-                }
-            }
-        }
-    }
-    return Pnumber;
 }
